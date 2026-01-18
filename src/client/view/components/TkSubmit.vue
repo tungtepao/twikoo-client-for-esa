@@ -1,5 +1,5 @@
 <template>
-  <div class="tk-submit tk-fade-in" ref="tk-submit">
+  <div class="tk-submit tk-fade-in" ref="tk-submit" id="esacomment">
     <div class="tk-row">
       <tk-avatar :config="config" :mail="mail" :nick="nick" />
       <div class="tk-col">
@@ -36,11 +36,16 @@
       <el-button class="tk-preview"
           size="small"
           @click="preview">{{ t('SUBMIT_PREVIEW') }}</el-button>
-      <el-button class="tk-send"
+      <el-button id="bt-postcomment" class="tk-send"
           type="primary"
           size="small"
           :disabled="!canSend"
           @click="send">{{ isSending ? t('SUBMIT_SENDING') : t('SUBMIT_SEND') }}</el-button>
+        <el-button id="esapostcomment" class="tk-send"
+          type="primary"
+          size="small"
+          :disabled="!canSend"
+          @click="sendesa">测试阿里AI验证码</el-button>        
       <div class="tk-turnstile-container" ref="turnstile-container">
         <div class="tk-turnstile" ref="turnstile"></div>
       </div>
@@ -231,7 +236,40 @@ export default {
         if (sendResult && sendResult.result && sendResult.result.id) {
           this.comment = ''
           this.errorMessage = ''
-          this.$emit('load')
+          this.$emit('comment-added', sendResult.result)
+          this.saveDraft()
+        } else {
+          throw new Error(sendResult.result.message)
+        }
+      } catch (e) {
+        logger.error('评论失败', e)
+        this.errorMessage = `${t('COMMENT_FAILED')}: ${e && e.message}`
+      } finally {
+        this.isSending = false
+      }
+    },
+    async sendesa () {
+      this.isSending = true
+      try {
+        const comment = {
+          nick: this.nick,
+          mail: this.mail,
+          link: this.link,
+          ua: await getUserAgent(),
+          url: getUrl(this.$twikoo.path),
+          href: getHref(this.$twikoo.href),
+          comment: marked(this.comment),
+          pid: this.pid ? this.pid : this.replyId,
+          rid: this.replyId
+        }
+        if (this.config.TURNSTILE_SITE_KEY) {
+          comment.turnstileToken = await this.getTurnstileToken()
+        }
+        const sendResult = await call(this.$tcb, 'COMMENT_SUBMIT_ESA', comment)
+        if (sendResult && sendResult.result && sendResult.result.id) {
+          this.comment = ''
+          this.errorMessage = ''
+          this.$emit('comment-added', sendResult.result)
           this.saveDraft()
         } else {
           throw new Error(sendResult.result.message)

@@ -58,7 +58,10 @@ const call = async (tcb, event, data = {}) => {
             }
           }
         }
-        xhr.open('POST', _envId)
+        // 这里加一个判断，如果event=COMMENT_SUBMIT，则在_envId后面加一个/comment
+        const url = event === 'COMMENT_SUBMIT_ESA' ? _envId + '/comments' : _envId
+        console.log('测试ESA AI验证码的专属评论URL，看看提交评论的url',url)
+        xhr.open('POST', url)
         xhr.setRequestHeader('Content-Type', 'application/json')
         xhr.send(JSON.stringify({ event, accessToken, ...data }))
       } catch (e) {

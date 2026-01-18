@@ -60,6 +60,7 @@
           :reply-id="replyId ? replyId : comment.id"
           :pid="comment.id"
           :config="config"
+          @comment-added="onReplyAdded"
           @load="onLoad"
           @cancel="onCancel" />
       <!-- 回复列表 -->
@@ -183,6 +184,12 @@ export default {
   },
   methods: {
     t,
+    onReplyAdded (newReply) {
+      if (!this.comment.replies) {
+        this.comment.replies = []
+      }
+      this.comment.replies.push(newReply)
+    },
     getIconBy (name, list) {
       const lowerCaseName = name.toLowerCase()
       for (const key in list) {
@@ -246,6 +253,7 @@ export default {
       this.$emit('reply', '')
     },
     onLoad () {
+      console.log('这个是回复评论的加载')
       if (this.comment.replies.length > 0) {
         this.$refs['tk-replies'].lastElementChild.scrollIntoView({
           behavior: 'smooth',

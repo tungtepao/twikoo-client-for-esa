@@ -1,6 +1,6 @@
 <template>
   <div class="tk-comments">
-    <tk-submit @load="initComments" :config="config" />
+    <tk-submit @comment-added="onCommentAdded" @load="initComments" :config="config" />
     <div class="tk-comments-container" v-loading="loading">
       <div class="tk-comments-title">
         <span class="tk-comments-count" :class="{ __hidden: !comments.length }">
@@ -63,6 +63,23 @@ export default {
   },
   methods: {
     t,
+    onCommentAdded (newComment) {
+      this.count++
+      if (newComment.rid) {
+        // 如果是回复评论，找到父评论并添加到回复列表
+        const parentComment = this.comments.find(c => c.id === newComment.rid)
+        if (parentComment) {
+          if (!parentComment.replies) {
+            parentComment.replies = []
+          }
+          parentComment.replies.push(newComment)
+        }
+      } else {
+        // 如果是顶级评论，直接添加到列表开头
+        this.comments.unshift(newComment)
+      }
+      this.$nextTick(this.onCommentLoaded)
+    },
     async initConfig () {
       const result = await call(this.$tcb, 'GET_CONFIG')
       if (result && result.result && result.result.config) {
@@ -71,6 +88,7 @@ export default {
       }
     },
     async initComments () {
+      console.log('准备初始化评论 tkcomments initComments')
       this.loading = true
       const url = getUrl(this.$twikoo.path)
       await this.getComments({ url })
